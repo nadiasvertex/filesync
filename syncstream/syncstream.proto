@@ -1,0 +1,21 @@
+syntax = "proto3";
+package syncstream;
+
+option go_package = "github.com/nadiasvertex/filesync/syncstream";
+
+message Settings {
+  string compression= 1;
+}
+
+message Chunk {
+  uint64 offset = 1;
+  uint64 length = 2;
+  uint64 fingerprint = 3;
+  uint64 file_index = 4;
+  optional bytes data = 5;
+}
+
+message FileIndexMapping {
+  uint64 file_index = 1;
+  string path = 2;
+}
