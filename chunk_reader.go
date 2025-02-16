@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/encoding/protodelim"
 )
 
-// chunkReceiver reads chunks from the archive and sends them to the receiver for patching.
-func chunkReceiver() {
+// chunkReader reads chunks from the archive and sends them to the receiver for patching.
+func chunkReader() {
 	archiveFile, err := os.Open(*sendArchivePath)
 	if err != nil {
 		log.Fatalf("Error opening archive file '%s': %v", *sendArchivePath, err)

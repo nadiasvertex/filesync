@@ -9,10 +9,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// indexCompareStreamer compares the fingerprints of chunks in the source file with
-// the fingerprints of chunks in the target file and sends the missing chunks to the
-// chunkSender.
-func indexCompareStreamer(sourceChunks chan ChunkItem, missingChunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
+// indexComparer compares the fingerprints of chunks in the source file with the
+// fingerprints of chunks in the target file and sends the missing chunks to be
+// serialized.
+func indexComparer(sourceChunks chan ChunkItem, missingChunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
 	defer chunkWaitGroup.Done()
 	defer close(missingChunks)
 
@@ -26,6 +26,7 @@ func indexCompareStreamer(sourceChunks chan ChunkItem, missingChunks chan ChunkI
 	for chunk := range sourceChunks {
 		key := chunkToKey(chunk)
 		var data []byte
+
 		if err := db.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(key)
 			if err != nil {
@@ -51,6 +52,9 @@ func indexCompareStreamer(sourceChunks chan ChunkItem, missingChunks chan ChunkI
 
 		if targetChunk.Fingerprint != chunk.Content.Fingerprint {
 			missingChunks <- chunk
+			if *verbose {
+				log.Printf("changed chunk: %s offset=%d", chunk.Path, chunk.Content.Offset)
+			}
 		}
 	}
 }

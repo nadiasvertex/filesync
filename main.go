@@ -18,7 +18,7 @@ var verbose = flag.Bool("verbose", false, "Enable verbose logging")
 var avgChunkSize = flag.Int("avg-chunk-size", 1*miB, "Set the average chunk size. (default 1 MiB)")
 var minChunkSize = flag.Int("min-chunk-size", 0, "Set the minimum chunk size. (default avg / 4)")
 var maxChunkSize = flag.Int("max-chunk-size", 0, "Set the maximum chunk size. (default avg * 4)")
-var normalization = flag.Int("normalization", 0, "Set the normalization level (default 2)")
+var normalization = flag.Int("normalization", 2, "Set the normalization level (default 2)")
 var disableNormalization = flag.Bool("no-normalization", false, "Disable normalization (default false)")
 var compression = flag.String("compression", "lz4", "Sets the kind of compression to use. Options are lz4, gzip, flate, and none. (default lz4)")
 var mode = flag.String("mode", "index", "Sets the execution mode. Options are send, recv, sync, and index. (default index)")
@@ -34,6 +34,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *minChunkSize == 0 {
+		*minChunkSize = *avgChunkSize / 4
+	}
+
+	if *maxChunkSize == 0 {
+		*maxChunkSize = *avgChunkSize * 4
+	}
+
 	inputPath := flag.Arg(0)
 
 	var info os.FileInfo
@@ -45,7 +53,7 @@ func main() {
 	}
 
 	if *mode == "recv" {
-		chunkReceiver()
+		chunkReader()
 		os.Exit(0)
 	}
 
@@ -64,8 +72,8 @@ func main() {
 		go indexUpdateStreamer(chunkChannel, &chunkWaitGroup)
 	case "send":
 		chunkWaitGroup.Add(2)
-		go indexCompareStreamer(chunkChannel, missingChunkChannel, &chunkWaitGroup)
-		go chunkSender(missingChunkChannel, &chunkWaitGroup)
+		go indexComparer(chunkChannel, missingChunkChannel, &chunkWaitGroup)
+		go chunkWriter(missingChunkChannel, &chunkWaitGroup)
 	default:
 		log.Fatalf("Unknown mode '%s'", *mode)
 	}

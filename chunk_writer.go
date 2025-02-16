@@ -16,8 +16,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// chunkStreamer is responsible for streaming chunks to the output.
-func chunkStreamer(out io.Writer, chunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
+// chunkSerializer is responsible for streaming chunks to the output.
+func chunkSerializer(out io.Writer, chunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
 	defer chunkWaitGroup.Done()
 
 	currentIndex := 0
@@ -41,8 +41,8 @@ func chunkStreamer(out io.Writer, chunks chan ChunkItem, chunkWaitGroup *sync.Wa
 	}
 }
 
-// chunkSender sends missing chunks into the output archive.
-func chunkSender(chunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
+// chunkWriter sends missing chunks into the output archive.
+func chunkWriter(chunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
 	defer chunkWaitGroup.Done()
 
 	archivePath := *sendArchivePath
@@ -81,8 +81,11 @@ func chunkSender(chunks chan ChunkItem, chunkWaitGroup *sync.WaitGroup) {
 	fileIndexMap := make(map[string]uint64)
 
 	for chunk := range chunks {
+
+		// Check to see if the file index mapping exists
 		_, exists := fileIndexMap[chunk.Path]
 		if !exists {
+			// Update the file index mapping
 			fileIndexMap[chunk.Path] = uint64(chunk.FileIndex)
 			protodelim.MarshalTo(mapOut, &syncstream.FileIndexMapping{
 				Path:      chunk.Path,
